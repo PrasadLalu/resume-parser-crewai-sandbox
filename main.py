@@ -1,7 +1,9 @@
-import os
+import json
 from dotenv import load_dotenv
 import streamlit as st
+from app.utils.utils import text_to_docx_bytes
 from app.utils.file_loader import detect_and_extract
+from app.crew import run_pipeline
 
 # Load environment variables
 load_dotenv()
@@ -42,7 +44,73 @@ if run_btn:
             st.error("Could not extract any text from the file.")
         else:
             with st.spinner("Running Crew agents..."):
-                print("File Extention: ", ext)
-                pass
-        
-        
+                cleaned, rewritten, final_resume, evaluation = run_pipeline(
+                    raw_resume_text=raw_text,
+                    job_title=job_title.strip(),
+                    job_description=job_desc.strip()
+                )
+                
+            with tabs[0]:
+                st.subheader("Cleaned Resume (plain text)")
+                st.code(cleaned, language="markdown")
+                st.download_button(
+                    "Download cleaned.txt",
+                    data=cleaned.encode("utf-8"),
+                    file_name="cleaned_resume.txt",
+                    mime="text/plain"
+                )
+                
+            with tabs[1]:
+                st.subheader("Rewritten Resume (ATS-optimized)")
+                st.code(rewritten, language="markdown")
+                st.download_button(
+                    "Download rewritten.txt",
+                    data=rewritten.encode("utf-8"),
+                    file_name="rewritten_resume.txt",
+                    mime="text/plain"
+                )
+                
+            with tabs[2]:
+                st.subheader("Final Resume (Refined Bullets)")
+                st.code(final_resume, language="markdown")
+
+                # Offer DOCX & TXT downloads
+                st.download_button(
+                    "Download final.txt",
+                    data=final_resume.encode("utf-8"),
+                    file_name="final_resume.txt",
+                    mime="text/plain"
+                )
+                try:
+                    docx_bytes = text_to_docx_bytes(final_resume)
+                    st.download_button(
+                        "Download final.docx",
+                        data=docx_bytes,
+                        file_name="final_resume.docx",
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                except Exception as e:
+                    st.warning(f"Could not generate DOCX: {e}")
+
+            with tabs[3]:
+                st.subheader("ATS Evaluation & Suggestions")
+                # Try to parse evaluation as JSON-like
+                parsed = None
+                try:
+                    print("evaluation: ", evaluation)
+                    # Allow loose JSON (single quotes); try a quick fix
+                    text = evaluation.strip()
+                    fixed = text.replace("'", '"')
+                    parsed = json.loads(fixed)
+                except Exception:
+                    pass
+
+                if parsed and isinstance(parsed, dict):
+                    st.json(parsed)
+                    # Pretty headline
+                    if "overall_score" in parsed:
+                        st.metric("Overall ATS Score", f"{parsed['overall_score']}/100")
+                else:
+                    st.write("Raw evaluation output:")
+                    st.code(evaluation, language="json")
+
