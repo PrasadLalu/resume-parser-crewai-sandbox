@@ -1,0 +1,21 @@
+[project]
+name = "resume-parser-crewai-sandbox"
+version = "0.1.0"
+description = "Resume parser using CrewAI"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "crewai>=0.80.0",
+    "crewai-tools>=0.12.0",
+    "langchain>=0.3.27",
+    "langchain-community>=0.3.29",
+    "langchain-core>=0.3.76",
+    "langchain-groq>=0.3.8",
+    "langchain-openai>=0.3.33",
+    "pydantic>=2.8.2",
+    "pypdf>=4.2.0",
+    "python-docx>=1.1.2",
+    "python-dotenv>=1.0.1",
+    "requests>=2.31.0",
+    "streamlit>=1.36.0",
+]
